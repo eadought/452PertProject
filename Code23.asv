@@ -16,6 +16,9 @@ ra1 =  35797 + r_earth; %km
 epoch1 = 18295.82618115;
 d1 = 23; y1 = 2018; m1 = 10;
 t1 = (epoch1 - floor(epoch1));
+%Sat info
+m1 = 1984; %kg
+A1 = 19.84; %m^2
 
 % Object 2: LEO Iridium 135
 % 1 43070U 17083A   18296.41077455  .00000077  00000-0  20489-4 0  9993
@@ -29,6 +32,9 @@ t2 = (epoch1 - floor(epoch2));
 %Bstar value from TLE, now this value incorporates more pert affects than
 %just drag
 bstar2 = 20489e-4; %earthradi^-1
+%Sat info
+m2
+A
 
 %creat vectors of dates
 m = [m1,m2];
@@ -57,13 +63,7 @@ end
 tspan1 = [0 1+(1-t1)*24*60*60];
 tspan2 = [0 (1-t2)*24*60*60];
 [~,state_prop1] = ode45( @ode45_doughty , tspan1 , [R(:,1)' V(:,1)'], opt );
-[~,state_prop2] = ode45( @ode45_doughty , tspan2 , [R(:,1)' V(:,1)'], opt );
-
-figure(1)
-plot3(state_prop1(:,1),state_prop1(:,2),state_prop1(:,3),'*')
-hold on
-plot3(state_prop2(:,1),state_prop2(:,2),state_prop2(:,3))
-
+[~,state_prop2] = ode45( @ode45_doughty , tspan2 , [R(:,2)' V(:,2)'], opt );
 
 %% Part 1: : Propagate forward two objects (one LEO (<2000 km in semimajor 
 % axis and one not in LEO) including Drag, Non-spherical earth, n-body, 
@@ -75,15 +75,82 @@ plot3(state_prop2(:,1),state_prop2(:,2),state_prop2(:,3))
     % Only the sun or the moon as extra bodies
     % Same area used for both the SRP and Drag calculations
     
-t = 10; %days 
+JD = 18297.0;
+t = 100; %days 
+opt = odeset('RelTol',1e-8,'AbsTol',1e-8,'Event',@terminate);
 tspan = [0 24*60*60*t];
 
-[tnew,state2new] = ode45( @PertProp, tspan , [state_prop1(:,1:3) state_prop1(:,4:6)] , opt);
-[tnew,state2new] = ode45( @PertProp, tspan , [state_prop2(:,1:3) state_prop2(:,4:6)] , opt);
+[tnew1_test,state1new_test] = ode45( @ode45_doughty, tspan , [state_prop1(end,1:3)' state_prop1(end,4:6)'] , opt);
+[tnew2_test,state2new_test] = ode45( @ode45_doughty, tspan , [state_prop2(end,1:3)' state_prop2(end,4:6)'] , opt);
 
+[tnew1,state1new] = ode45( @PertProp, tspan , [state_prop1(end,1:3) state_prop1(end,4:6)] , opt , JD);
+[tnew2,state2new] = ode45( @PertProp, tspan , [state_prop2(end,1:3) state_prop2(end,4:6)] , opt , JD);
 
+%Check wih plots
+figure
+plot3(state1new_test(:,1),state1new_test(:,2),state1new_test(:,3))
+hold on
+plot3(state1new(:,1),state1new(:,2),state1new(:,3),'*')
 
-    
+figure
+plot3(state2new_test(:,1),state2new_test(:,2),state2new_test(:,3))
+hold on
+plot3(state2new(:,1),state2new(:,2),state2new(:,3),'*')
+
+mue=398600;
+for ii = 1:length(tnew1)
+    [~,e1(ii),inc1(ii),OMEGA1(ii),omega1(ii),~,h1(ii),T(ii)] = RV_COE(state1new(ii,:),398600);
+    rp1(ii)=(h1(ii)^2/mue)*(1/(1+e1(ii)*cosd(0)));
+    ra1(ii)=(h1(ii)^2/mue)*(1/(1+e1(ii)*cosd(180)));
+end
+figure
+subplot(2,2,1)
+hold all
+plot(tnew1/(24*60*60),ra1)
+plot(tnew1/(24*60*60),rp1)
+title('Change in Radius of Apogee & Perigee')
+xlabel('Time (days)'), ylabel('Altitude (km)')
+legend('Apogee','Perigee','Location','Best')
+subplot(2,2,2)
+plot(tnew1/(24*60*60),inc1-inc1(1))
+title('Inclination')
+xlabel('Time (days)'), ylabel('inc (degrees)')
+subplot(2,2,3)
+plot(tnew1/(24*60*60),OMEGA1-OMEGA1(1))
+title('RAAN')
+xlabel('Time (days)'), ylabel('RAAN (degrees)')
+subplot(2,2,4)
+plot(tnew1/(24*60*60),omega1-omega1(1))
+title('Arg of Perigee')
+xlabel('Time (days)'), ylabel('omega (degrees)')
+for ii = 1:length(tnew2)
+    [~,e2(ii),inc2(ii),OMEGA2(ii),omega2(ii),~,h2(ii),T(ii)] = RV_COE(state2new(ii,:),398600);
+    rp2(ii)=(h2(ii)^2/mue)*(1/(1+e2(ii)));
+    ra2(ii)=(h2(ii)^2/mue)*(1/(1-e2(ii)));
+end
+figure
+subplot(2,2,1)
+hold all
+plot(tnew2/(24*60*60),ra2)
+plot(tnew2/(24*60*60),rp2)
+title('Change in Radius of Apogee & Perigee')
+xlabel('Time (days)'), ylabel('Altitude (km)')
+legend('Apogee','Perigee','Location','Best')
+subplot(2,2,2)
+plot(tnew2/(24*60*60),inc2-inc2(1))
+title('Inclination')
+xlabel('Time (days)'), ylabel('inc (degrees)')
+subplot(2,2,3)
+plot(tnew2/(24*60*60),OMEGA2-OMEGA2(1))
+title('RAAN')
+xlabel('Time (days)'), ylabel('RAAN (degrees)')
+subplot(2,2,4)
+plot(tnew2/(24*60*60),omega2-omega2(1))
+title('Arg of Perigee')
+xlabel('Time (days)'), ylabel('omega (degrees)')
+
+autoArrangeFigures(2,2,1)
+
 %% Part 2: Pick one of the objects and show that you can correct for the 
 % perturbation and continue to correct for a period of time. 
 % The tolerances will be variable.

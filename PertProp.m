@@ -7,8 +7,8 @@ function d2ydt = PertProp ( t ,state , JD)
 
 u = 398600;
 r_mag = norm([state(1) state(2) state(3)]);
-R = state(1:3);
-V = state(4:6);
+R = state(1:3)';
+V = state(4:6)';
 %Update JD each step
 JD = JD + t/86400;
 % SRP
@@ -17,7 +17,7 @@ Rs = sunposition(JD);
 % DRAG
 P = dragpert(r_mag,R,V);
 % Total Pertubational Affect
-PERT = srp + P;
+PERT = 0 + P;
 
 %plug in position vector to orbit eq
 dxdt = -(u*state(1))/(r_mag^3) + PERT(1);
