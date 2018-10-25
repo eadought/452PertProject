@@ -4,6 +4,7 @@ clear all; close all; clc;
 
 r_earth = 6378;
 mu_earth = 398600;
+opt = odeset('RelTol',1e-8,'AbsTol',1e-8);
 %% Object Selection
 
 % Object 1: GEO IntelSat905
@@ -51,6 +52,18 @@ for ii = 1:2
     %find position and velocity vectors in geocentric frame
     [ R(:,ii) , V(:,ii) , theta(ii) ] = TLE2RV ( MA(ii) , ecc(ii) , h(ii) , RAAN(ii) , inc(ii), w(ii) );
 end
+
+%Propagate forward to JD: 18297.0
+tspan1 = [0 1+(1-t1)*24*60*60];
+tspan2 = [0 (1-t2)*24*60*60];
+[~,state_prop1] = ode45( @ode45_doughty , tspan1 , [R(:,1)' V(:,1)'], opt );
+[~,state_prop2] = ode45( @ode45_doughty , tspan2 , [R(:,1)' V(:,1)'], opt );
+
+figure(1)
+plot3(state_prop1(:,1),state_prop1(:,2),state_prop1(:,3),'*')
+hold on
+plot3(state_prop2(:,1),state_prop2(:,2),state_prop2(:,3))
+
 
 %% Part 1: : Propagate forward two objects (one LEO (<2000 km in semimajor 
 % axis and one not in LEO) including Drag, Non-spherical earth, n-body, 

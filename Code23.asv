@@ -52,6 +52,17 @@ for ii = 1:2
     [ R(:,ii) , V(:,ii) , theta(ii) ] = TLE2RV ( MA(ii) , ecc(ii) , h(ii) , RAAN(ii) , inc(ii), w(ii) );
 end
 
+%Propagate forward to JD: 18297.0
+tspan1 = [0 1+(1-t1)*24*60*60];
+tspan2 = [0 (1-t2)*24*60*60];
+[~,state_prop1] = ode45( @ode45_doughty , tspan1 , [R(:,1)' V(:,1)'], opt );
+r_prop1 = [state_prop1(end,1),state_prop1(end,2),state_prop1(end,3)];
+v_prop1 = [state_prop1(end,4),state_prop1(end,5),state_prop1(end,4)];
+
+[~,state_prop2] = ode45( @ode45_doughty , tspan2 , [R(:,1)' v(:,1)'], opt );
+r_prop1 = [state_prop1(end,1),state_prop1(end,2),state_prop1(end,3)];
+v_prop1 = [state_prop1(end,4),state_prop1(end,5),state_prop1(end,4)];
+
 %% Part 1: : Propagate forward two objects (one LEO (<2000 km in semimajor 
 % axis and one not in LEO) including Drag, Non-spherical earth, n-body, 
 % and solar radiation pressure perturbations when appropriate. 
