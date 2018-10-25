@@ -59,10 +59,10 @@ tspan2 = [0 (1-t2)*24*60*60];
 [~,state_prop1] = ode45( @ode45_doughty , tspan1 , [R(:,1)' V(:,1)'], opt );
 [~,state_prop2] = ode45( @ode45_doughty , tspan2 , [R(:,1)' V(:,1)'], opt );
 
-figure(1)
-plot3(state_prop1(:,1),state_prop1(:,2),state_prop1(:,3),'*')
-hold on
-plot3(state_prop2(:,1),state_prop2(:,2),state_prop2(:,3))
+% figure(1)
+% plot3(state_prop1(:,1),state_prop1(:,2),state_prop1(:,3),'*')
+% hold on
+% plot3(state_prop2(:,1),state_prop2(:,2),state_prop2(:,3))
 
 
 %% Part 1: : Propagate forward two objects (one LEO (<2000 km in semimajor 
@@ -74,6 +74,25 @@ plot3(state_prop2(:,1),state_prop2(:,2),state_prop2(:,3))
     % Only J2-J6
     % Only the sun or the moon as extra bodies
     % Same area used for both the SRP and Drag calculations
+    
+JD = 18297.0;
+t = 10; %days 
+tspan = [0 24*60*60*t];
+
+[tnew1_test,state1new_test] = ode45( @ode45_doughty, tspan , [state_prop1(end,1:3)' state_prop1(end,4:6)'] , opt);
+[tnew2_test,state2new_test] = ode45( @ode45_doughty, tspan , [state_prop2(end,1:3)' state_prop2(end,4:6)'] , opt);
+
+[tnew1,state1new] = ode45( @PertProp, tspan , [state_prop1(end,1:3) state_prop1(end,4:6)] , opt , JD);
+[tnew2,state2new] = ode45( @PertProp, tspan , [state_prop2(end,1:3) state_prop2(end,4:6)] , opt , JD);
+
+figure
+plot3(state1new_test(:,1),state1new_test(:,2),state1new_test(:,3))
+hold on
+plot3(state1new(:,1),state1new(:,2),state1new(:,3),'*')
+
+
+
+
     
 %% Part 2: Pick one of the objects and show that you can correct for the 
 % perturbation and continue to correct for a period of time. 
