@@ -4,6 +4,7 @@ clear all; close all; clc;
 
 r_earth = 6378;
 mu_earth = 398600;
+opt = odeset('RelTol',1e-8,'AbsTol',1e-8);
 %% Object Selection
 
 % Object 1: GEO IntelSat905
@@ -53,15 +54,52 @@ for ii = 1:2
 end
 
 %Propagate forward to JD: 18297.0
+JD0 = 18297.0;
 tspan1 = [0 1+(1-t1)*24*60*60];
 tspan2 = [0 (1-t2)*24*60*60];
-[~,state_prop1] = ode45( @ode45_doughty , tspan1 , [R(:,1)' V(:,1)'], opt );
-r_prop1 = [state_prop1(end,1),state_prop1(end,2),state_prop1(end,3)];
-v_prop1 = [state_prop1(end,4),state_prop1(end,5),state_prop1(end,4)];
+[~,state_prop1] = ode45( @ode45_doughty , tspan1 , [R(:,1)' V(:,1)'], opt ); %geo
+[~,state_prop2] = ode45( @ode45_doughty , tspan2 , [R(:,2)' V(:,2)'], opt ); %leo
 
-[~,state_prop2] = ode45( @ode45_doughty , tspan2 , [R(:,1)' v(:,1)'], opt );
-r_prop1 = [state_prop1(end,1),state_prop1(end,2),state_prop1(end,3)];
-v_prop1 = [state_prop1(end,4),state_prop1(end,5),state_prop1(end,4)];
+Rgeo = [state_prop1(end,1), state_prop1(end,2), state_prop1(end,3)];
+Rleo = [state_prop2(end,1), state_prop2(end,2), state_prop2(end,3)];
+
+Vgeo = [state_prop1(end,4), state_prop1(end,5), state_prop1(end,6)];
+Vleo = [state_prop2(end,4), state_prop2(end,5), state_prop2(end,6)];
+
+days = 50*24*60*60; %x days in seconds
+tspan = [0 days];
+stateGeo = [Rgeo Vgeo];
+stateLeo = [Rleo Vleo];
+
+[tGeo, dragGeo] = ode45(@CowellODE, tspan, stateGeo, opt, 2.2, 1, 100, JD0, 0);
+[tLeo, dragLeo] = ode45(@CowellODE, tspan, stateLeo, opt, 2.2, 1, 100, JD0, 0);
+
+RdragGeo = [dragGeo(:,1), dragGeo(:,2), dragGeo(:,3)];
+VdragGeo = [dragGeo(:,4), dragGeo(:,5), dragGeo(:,6)];
+RdragLeo = [dragLeo(:,1), dragLeo(:,2), dragLeo(:,3)];
+VdragLeo = [dragLeo(:,4), dragLeo(:,5), dragLeo(:,6)];
+
+for i = 1:length(tLeo)
+    rdragLeo(i) = norm(RdragLeo(i,:));
+end
+
+j = 1;
+k = 1;
+for i = 2:length(tLeo) - 1
+    if(rdragLeo(i) > rdragLeo(i-1) && rdragLeo(i) > rdragLeo(i+1))
+        rApoLeo(j) = rdragLeo(i);
+        j = 
+    
+
+
+% [t, Jgeo] = ode45(@OblateCowellODE, tspan, stateGeo, opt, 1,1,1,1,1);
+% [t, Jleo] = ode45(@OblateCowellODE, tspan, stateLeo, opt, 1,1,1,1,1);
+% 
+% plot3(Jleo(:,1), Jleo(:,2), Jleo(:,3))
+% hold on
+% plot3(Jgeo(:,1), Jgeo(:,2), Jgeo(:,3))
+
+
 
 %% Part 1: : Propagate forward two objects (one LEO (<2000 km in semimajor 
 % axis and one not in LEO) including Drag, Non-spherical earth, n-body, 
